@@ -5,6 +5,12 @@ const bcrypt = require('bcrypt');
 const OTPDB = require('.././models/otp');
 const connectDB = require('.././config/connectDB');
 const userModel = require('.././models/user');
+const { Resend } = require("resend");
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 connectDB();
 
@@ -46,17 +52,6 @@ function otpEmailTemplate(otp) {
     `;
 }
 
-const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: {
-        user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASS
-    },
-    connectionTimeout: 30000 // 30 seconds
-});
-
 router.post("/", async (req, res) => {
     const { email } = req.body;
     
@@ -81,11 +76,11 @@ router.post("/", async (req, res) => {
             });
 
             try {
-                await transporter.sendMail({
-                    from: process.env.EMAIL,
+                await resend.emails.send({
+                    from: "onboarding@resend.dev",
                     to: email,
                     subject: "VeloX: Your OTP Code",
-                    html: otpEmailTemplate(otp)
+                    html: otpEmailTemplate(otp),
                 });
 
                 return res.json({ success: true, message: "OTP sent successfully" });
