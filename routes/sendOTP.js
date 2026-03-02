@@ -5,6 +5,12 @@ const bcrypt = require('bcrypt');
 const OTPDB = require('.././models/otp');
 const connectDB = require('.././config/connectDB');
 const userModel = require('.././models/user');
+const { Resend } = require("resend");
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 connectDB();
 
@@ -46,14 +52,6 @@ function otpEmailTemplate(otp) {
     `;
 }
 
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASS
-    }
-});
-
 router.post("/", async (req, res) => {
     const { email } = req.body;
     
@@ -76,17 +74,25 @@ router.post("/", async (req, res) => {
                 otp: hashedOTP,
                 expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 min
             });
-            
-            await transporter.sendMail({
-                from: process.env.EMAIL,
-                to: email,
-                subject: "VeloX: Your OTP Code",
-                html: otpEmailTemplate(otp)
-            });
 
-            res.status(200).json({ success: true, message: "OTP sent successfully" });
+            try {
+                await resend.emails.send({
+                    from: "onboarding@resend.dev",
+                    to: email,
+                    subject: "VeloX: Your OTP Code",
+                    html: otpEmailTemplate(otp),
+                });
+
+                return res.json({ success: true, message: "OTP sent successfully" });
+            } catch (err) {
+                console.error("Email error:", err);
+                return res.status(500).json({
+                    success: false,
+                    message: "Failed to send OTP"
+                });
+            }
         } catch (error) {
-            res.status(500).json({ success: false, message: error.message });
+            return res.status(500).json({ success: false, message: error.message });
         }
     } else {
         // If exist with google
