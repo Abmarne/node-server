@@ -5,7 +5,7 @@ const userModel = require('../models/user');
 
 // Home Router
 router.get('/', (req, res) => {
-    res.render("Home");
+    res.redirect("/login");
 });
 
 // Login Router

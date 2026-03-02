@@ -47,11 +47,14 @@ function otpEmailTemplate(otp) {
 }
 
 const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
     auth: {
         user: process.env.EMAIL,
         pass: process.env.EMAIL_PASS
-    }
+    },
+    connectionTimeout: 30000 // 30 seconds
 });
 
 router.post("/", async (req, res) => {
@@ -76,17 +79,25 @@ router.post("/", async (req, res) => {
                 otp: hashedOTP,
                 expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 min
             });
-            
-            await transporter.sendMail({
-                from: process.env.EMAIL,
-                to: email,
-                subject: "VeloX: Your OTP Code",
-                html: otpEmailTemplate(otp)
-            });
 
-            res.status(200).json({ success: true, message: "OTP sent successfully" });
+            try {
+                await transporter.sendMail({
+                    from: process.env.EMAIL,
+                    to: email,
+                    subject: "VeloX: Your OTP Code",
+                    html: otpEmailTemplate(otp)
+                });
+
+                return res.json({ success: true, message: "OTP sent successfully" });
+            } catch (err) {
+                console.error("Email error:", err);
+                return res.status(500).json({
+                    success: false,
+                    message: "Failed to send OTP"
+                });
+            }
         } catch (error) {
-            res.status(500).json({ success: false, message: error.message });
+            return res.status(500).json({ success: false, message: error.message });
         }
     } else {
         // If exist with google
