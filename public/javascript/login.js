@@ -36,3 +36,17 @@ signinwithGoogleBtn.addEventListener("click", () => {
         window.location.href = '/auth/google';
     }, 2000);
 });
+
+const loginForm = document.querySelector('.login-form');
+const loginBtn = document.getElementById('loginBtn');
+
+loginForm.addEventListener('submit', function() {
+    loginBtn.innerHTML = `
+    <div class="dots">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+    `;
+    loginBtn.disabled = true;
+});
